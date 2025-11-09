@@ -1,3 +1,17 @@
+Metadata-Version: 2.4
+Name: repo-maintenance-miner
+Version: 0.1.0
+Summary: CLI para minerar repositórios e avaliar saúde de manutenção (atividade e dependências)
+Author: Guilherme Gomes Palhares Gomide, Diogo Alves Graciano, Victor Yuji Yano, Guilherme Novais de Souza
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: typer>=0.12
+Requires-Dist: pydriller>=2.6
+Requires-Dist: requests>=2.31
+Requires-Dist: semver>=3.0.0
+Requires-Dist: rich>=13.7
+Requires-Dist: tomli>=2.0; python_version < "3.11"
+
 # repo-maintenance-miner
 
 Ferramenta de linha de comando para minerar repositórios e identificar sinais de problemas de manutenção/evolução, analisando atividade recente e estado das dependências (desatualização e vulnerabilidades conhecidas).

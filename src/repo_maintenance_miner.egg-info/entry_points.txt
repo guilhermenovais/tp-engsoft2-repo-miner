@@ -1,0 +1,2 @@
+[console_scripts]
+repo-miner = repo_miner.cli:app
