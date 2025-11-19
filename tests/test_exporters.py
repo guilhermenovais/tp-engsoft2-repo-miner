@@ -19,3 +19,16 @@ def test_export_json_and_csv(tmp_path: Path):
     # header + 2 rows
     assert len(content) == 3
     assert "name" in content[0] and "val" in content[0] and "extra" in content[0]
+
+def test_export_csv_empty(tmp_path):
+    """export_csv deve criar um arquivo vazio quando receber uma lista vazia."""
+
+    from repo_miner.exporters import export_csv
+
+    out = tmp_path / "empty.csv"
+    export_csv([], out)
+
+    assert out.exists()
+
+    content = out.read_text(encoding="utf-8")
+    assert content == ""
