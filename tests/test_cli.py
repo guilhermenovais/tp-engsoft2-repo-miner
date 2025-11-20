@@ -59,3 +59,26 @@ def test_cli_analyze_score(tmp_path, monkeypatch):
     # result prints JSON to stdout
     data = json.loads(result.stdout)
     assert 0 <= data["maintenance_score"] <= 100
+
+def test_cli_deps_offline(tmp_path):
+    from repo_miner.cli import app
+    from typer.testing import CliRunner
+
+    runner = CliRunner()
+
+    pyproject_path = tmp_path / "pyproject.toml"
+    pyproject_path.write_text(
+        """
+        [project]
+        name = "example"
+        version = "0.1.0"
+        dependencies = ["requests==2.26.0"]
+        """,
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["deps", str(tmp_path), "--offline"])
+    assert result.exit_code == 0
+
+    output = result.stdout.strip()
+    assert output.startswith("{") or output.startswith("[")
