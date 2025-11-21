@@ -8,6 +8,9 @@ from rich.table import Table
 
 from .activity import analyze_activity
 from .deps import analyze_dependencies
+import subprocess
+import tempfile
+from urllib.parse import urlparse
 from .exporters import export_json, export_csv
 
 app = typer.Typer(help="Ferramenta CLI para minerar repositórios e avaliar saúde de manutenção")
@@ -39,13 +42,35 @@ def activity(
 
 @app.command()
 def deps(
-    repo: str = typer.Argument(".", help="Caminho do projeto para detecção de dependências (requirements/pyproject)"),
+    repo: str = typer.Argument(".", help="Caminho local ou URL https://github.com/org/repo para detecção de dependências"),
     json_out: Optional[Path] = typer.Option(None, help="Arquivo para salvar JSON"),
     csv_out: Optional[Path] = typer.Option(None, help="Arquivo para salvar CSV"),
-    offline: bool = typer.Option(False, help="Não consultar rede (apenas parse)")
+    offline: bool = typer.Option(False, help="Não consultar rede (apenas parse)"),
+    auto_clone: bool = typer.Option(True, help="Clonar automaticamente URL remota (depth=1) se caminho for HTTP(S)")
 ):
     """Analisa dependências: desatualizadas e vulnerabilidades (OSV)."""
-    report = analyze_dependencies(Path(repo), offline=offline)
+    target_path = Path(repo)
+    if repo.startswith("http://") or repo.startswith("https://"):
+        if not auto_clone:
+            console.print("URL remota detectada. Use --auto-clone ou forneça caminho local previamente clonado.", style="red")
+            raise typer.Exit(code=1)
+        parsed = urlparse(repo)
+        parts = [p for p in parsed.path.split("/") if p]
+        if len(parts) < 2:
+            console.print("URL não representa repositório (faltando segmento de projeto). Use formato https://github.com/org/repo", style="red")
+            raise typer.Exit(code=1)
+        tmpdir = Path(tempfile.mkdtemp(prefix="repo_miner_clone_"))
+        console.print(f"Clonando repositório em {tmpdir} ...")
+        try:
+            subprocess.run(["git", "clone", "--depth", "1", repo, str(tmpdir)], check=True, capture_output=True)
+        except Exception as e:
+            console.print(f"Falha ao clonar: {e}", style="red")
+            raise typer.Exit(code=1)
+        target_path = tmpdir
+    report = analyze_dependencies(target_path, offline=offline)
+    # aviso se nenhum manifesto encontrado
+    if report.get("summary", {}).get("packages_total") == 0:
+        report["warning"] = "Nenhum arquivo requirements.txt ou pyproject.toml encontrado no caminho informado." 
 
     if json_out:
         export_json(report, json_out)
